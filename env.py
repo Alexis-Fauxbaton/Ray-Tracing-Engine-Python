@@ -3,10 +3,9 @@ from entity import *
 from ray import *
 import pygame
 import sys
+from constants import X, Y, Z
+import time
 
-X = np.array([1, 0, 0])
-Y = np.array([0, 1, 0])
-Z = np.array([0, 0, 1])
 
 class Env:
 
@@ -39,7 +38,7 @@ class Env:
     def render(self):
         pygame.init()
         print(self.camera_dim)
-        window = pygame.display.set_mode(self.camera_dim)
+        window = pygame.display.set_mode(self.camera_dim[:-1])
         camera_center_px = self.camera_dim / 2
         running = True
         while running:
@@ -49,10 +48,12 @@ class Env:
                     running = False
 
             # calculate the angle difference between the scene origin and the camera
-            theta = np.arccos(np.dot(Z, self.camera_orientation) / (np.linalg.norm(self.camera_orientation) * np.linalg.norm(Z)))
-            psi = np.arccos(np.dot(X, self.camera_orientation) / (np.linalg.norm(self.camera_orientation) * np.linalg.norm(X)))
+            theta = np.arccos(
+                np.dot(Z, self.camera_orientation) / (np.linalg.norm(self.camera_orientation) * np.linalg.norm(Z)))
+            psi = np.arccos(
+                np.dot(X, self.camera_orientation) / (np.linalg.norm(self.camera_orientation) * np.linalg.norm(X)))
 
-            print(theta, psi)
+            # print(theta, psi)
 
             cos_t = np.cos(-theta)
             sin_t = np.sin(theta)
@@ -65,15 +66,16 @@ class Env:
             Ry = np.array([[cos_p, -sin_p, 0], [sin_p, cos_p, 0], [0, 0, 1]])
 
             R = np.dot(Rz, Ry)
-            R_1 = np.linalg.inv(R) # TODO change this so that we multiply instead by the rotation matrices with the reversed angles from above to save computation time
+            R_1 = np.linalg.inv(
+                R)  # TODO change this so that we multiply instead by the rotation matrices with the reversed angles from above to save computation time
 
             self.camera_x = np.dot(R, X)
             self.camera_y = np.dot(R, Y)
             self.camera_z = np.dot(R, Z)
 
-            print(self.camera_x, self.camera_y, self.camera_z)
+            # print(self.camera_x, self.camera_y, self.camera_z)
 
-            sys.exit()
+            # sys.exit()
 
             """
             Extremely ugly and suboptimal, but wanted to write quick code that would let me render a scene easily
@@ -83,14 +85,23 @@ class Env:
                 for j in range(self.camera_dim[1]):
                     ray_position_px = np.array([i, j, 0])
                     delta_px = camera_center_px - ray_position_px
-                    delta_px[1] = -1 * delta_px[1] # Here we change the sign of the y coordinate since it is tipically reversed in the window
+                    delta_px[1] = -1 * delta_px[1]  # Here we change the sign of the y coordinate since it is
+                    # typically reversed in the window
                     delta_m = delta_px * self.px_to_m
                     delta_m = np.dot(R_1, delta_m)
-                    ray_origin = self.center - delta_m
-                    ray_unit_vector = np.dot(R_1, self.camera_z)
+                    ray_origin = self.camera_pos - delta_m
+                    ray_unit_vector = self.camera_z
+                    color = np.array([1.0, 1.0, 1.0])
                     for k in range(self.nb_rays):
                         ray = Ray(ray_origin, ray_unit_vector)
+                        ray.check_entities_collision(self.entities)
+                        color += ray.color
+                    color *= 255
+
+                    window.set_at((i, j), color)
 
             pygame.display.flip()
+
+            print("New Frame")
 
         pygame.quit()
