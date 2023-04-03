@@ -97,7 +97,8 @@ class Env:
                         ray.check_entities_collision(self.entities)
                         color += ray.color
                     color *= 255
-
+                    color = np.clip(color, 0, 255)
+                    # print(color)
                     window.set_at((i, j), color)
 
             pygame.display.flip()
