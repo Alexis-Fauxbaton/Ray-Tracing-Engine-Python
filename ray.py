@@ -18,7 +18,7 @@ class Ray:
 
     def check_entities_collision(self, entities: list[Entity]):
         t_min = np.inf
-        intersection_albedo = None
+        intersection_albedo = np.array([1.0, 1.0, 1.0])
         # TODO might want to use a search tree that uses 3d coordinates to speed up search time
         for entity in entities:
             is_collision, intersection_point, t = entity.get_ray_collision(self.origin, self.unit_vector)
